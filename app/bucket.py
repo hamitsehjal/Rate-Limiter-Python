@@ -10,7 +10,7 @@ Thread-safety is ensured by:
 
 
 class Bucket:
-    def __init__(self, max_capacity=4):
+    def __init__(self, max_capacity=10):
         self.tokens = Queue(maxsize=max_capacity)
 
         # Fill the Bucket initially

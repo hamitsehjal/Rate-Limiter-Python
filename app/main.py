@@ -1,8 +1,13 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from refill import ip_to_bucket, lock, refill_thread
+
+from app.refill import lock, ip_to_bucket, refill_thread
+from app.logger import logger
+
 
 app = FastAPI()
+
+refill_thread.start()
 
 
 @app.get("/")
@@ -18,21 +23,16 @@ async def unlimited():
 @app.get("/limited")
 async def limited(request: Request):
     ip_address = request.client.host
+    logger.debug(f"IP Address = {ip_address}")
     with lock:
         bucket = ip_to_bucket[ip_address]
+        logger.debug(f"Item in Buckets - {bucket.check_size()}")
         if bucket.is_empty():
             return JSONResponse(
-                content="Request BLOCKED: Too many Requests", status_code=429
+                content="Rate limit exceeded: Too many Requests", status_code=429
             )
-            raise HTTPException(status_code=429, detail="Too many requests!!")
-        return JSONResponse(content="Request Passed")
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    refill_thread.start()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        bucket.remove_token()
+        return JSONResponse(content="Request processed")
 
 
 """
