@@ -1,13 +1,16 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from app.refill import lock, ip_to_bucket, refill_thread
+# from threading import Lock
+from asyncio import Lock
+from app.rate_limiter import RateLimiter, RateLimitingFactory
 from app.logger import logger
-
 
 app = FastAPI()
 
-refill_thread.start()
+ip_to_locks = {}  # mapping ip_address to Lock
+ip_to_rate_limiter = {}  # mapping ip address to instance of Rate Limiter
+ip_locks_creation_lock = Lock()
 
 
 @app.get("/")
@@ -21,31 +24,29 @@ async def unlimited():
 
 
 @app.get("/limited")
-async def limited(request: Request):
+async def limited(request: Request, algo=None):
+    # get the client's ip address
     ip_address = request.client.host
     logger.debug(f"IP Address = {ip_address}")
-    with lock:
-        bucket = ip_to_bucket[ip_address]
-        logger.debug(f"Item in Buckets - {bucket.check_size()}")
-        if bucket.is_empty():
-            return JSONResponse(
-                content="Rate limit exceeded: Too many Requests", status_code=429
+
+    async with ip_locks_creation_lock:
+        if ip_address not in ip_to_locks:
+            ip_to_locks[ip_address] = Lock()
+
+    async with ip_to_locks[ip_address]:
+        if ip_address not in ip_to_rate_limiter:
+            # instantiate a Rate Limiting Algorithm based on query parameter
+            rate_limiting_algorithm = RateLimitingFactory(rate_algorithm=algo)
+
+            # instantiate a Rate Limiter an create an entry in hashmap
+            ip_to_rate_limiter[ip_address] = RateLimiter(
+                chosen_algorithm=rate_limiting_algorithm
             )
-        bucket.remove_token()
-        return JSONResponse(content="Request processed")
 
+    if not ip_to_rate_limiter[ip_address].allow_request():
+        # Decline request
+        return JSONResponse(
+            content="Rate Limited Exceed: Too many Requests!", status_code=429
+        )
 
-"""
-Approach - 1 (Multi-threading)
-How are we refilling the buckets ??
-- Directly adds one token per iteration of the refill_buckets loop.
-
-DRAWBACK: 
-Currently we are expecting that all the token count of all the buckets in the hashmap (refill_buckets method) will be done withing 1 second. This could be true when hashmap is of smaller size, but with increased system load or other factors, the refill_buckets method might not run exactly every second 
-
-TRADE-OFFS:
-- Less precise if the refill_buckets function doesn't run exactly every second.
-- Doesn't accommodate variable refill rates without modification.
-- Won't "catch up" if the refill function is delayed for some reason.
-
-"""
+    return JSONResponse(content="This API offers limited Use!!")
