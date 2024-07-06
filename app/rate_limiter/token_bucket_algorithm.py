@@ -1,7 +1,8 @@
 from queue import Queue
 from time import time
-from .rate_limiter_algorithm import RateLimitingAlgorithm
+from .rate_limiting_algorithm import RateLimitingAlgorithm
 from asyncio import Lock
+from app.logger import logger
 
 
 class TokenBucketAlgorithm(RateLimitingAlgorithm):
@@ -37,7 +38,7 @@ class TokenBucketAlgorithm(RateLimitingAlgorithm):
     def remove_token_from_bucket(self):
         self.bucket.get()
 
-    def allow_request(self):
+    async def allow_request(self):
         """
         check if the incoming request is allowed or not
 
@@ -49,7 +50,8 @@ class TokenBucketAlgorithm(RateLimitingAlgorithm):
             curr_time = time()
             elapsed_time_since_last_refill = curr_time - self.last_updated
             tokens_to_be_added = (
-                int(elapsed_time_since_last_refill / refill_rate) * refill_amount
+                int(elapsed_time_since_last_refill / self.refill_rate)
+                * self.refill_amount
             )
 
             for _ in range(tokens_to_be_added):

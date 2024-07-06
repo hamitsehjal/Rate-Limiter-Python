@@ -5,5 +5,5 @@ class RateLimitingAlgorithm(ABC):
     """Base class for Rate Limiting Algorithm"""
 
     @abstractmethod
-    def allow_request():
+    def allow_request(self):
         pass

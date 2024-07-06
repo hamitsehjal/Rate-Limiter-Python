@@ -43,7 +43,8 @@ async def limited(request: Request, algo=None):
                 chosen_algorithm=rate_limiting_algorithm
             )
 
-    if not ip_to_rate_limiter[ip_address].allow_request():
+    awaited_result = await ip_to_rate_limiter[ip_address].allow_request()
+    if not awaited_result:
         # Decline request
         return JSONResponse(
             content="Rate Limited Exceed: Too many Requests!", status_code=429
