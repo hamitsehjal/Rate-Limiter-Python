@@ -1,4 +1,4 @@
-from .token_bucket_algorithm import RateLimitingAlgorithm, TokenBucketAlgorithm
+from app.algorithms import RateLimitingAlgorithm, TokenBucketAlgorithm
 
 
 def rate_limiting_factory(rate_algorithm: str) -> RateLimitingAlgorithm:

@@ -1,4 +1,4 @@
-from .rate_limiting_algorithm import RateLimitingAlgorithm
+from .rate_limiting_factory import RateLimitingAlgorithm
 
 
 class RateLimiter:
