@@ -1,1 +1,2 @@
 from .token_bucket_algorithm import TokenBucketAlgorithm, RateLimitingAlgorithm
+from .fixed_window_counter_algorithm import FixedWindowCounterAlgorithm
