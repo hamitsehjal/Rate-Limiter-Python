@@ -38,7 +38,7 @@ class TokenBucketAlgorithm(RateLimitingAlgorithm):
     def remove_token_from_bucket(self):
         self.bucket.get()
 
-    async def allow_request(self):
+    async def allow_request(self) -> bool:
         """
         check if the incoming request is allowed or not
 
