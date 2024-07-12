@@ -49,14 +49,16 @@ class TokenBucketAlgorithm(RateLimitingAlgorithm):
         async with self.lock:
             curr_time = time()
             elapsed_time_since_last_refill = curr_time - self.last_updated
-            tokens_to_be_added = (
-                int(elapsed_time_since_last_refill / self.refill_rate)
-                * self.refill_amount
+            tokens_to_be_added = min(
+                (
+                    (elapsed_time_since_last_refill // self.refill_rate)
+                    * self.refill_amount
+                ),
+                self.max_capacity,
             )
 
             for _ in range(tokens_to_be_added):
-                if not self.is_bucket_full():
-                    self.bucket.put(1)
+                self.bucket.put(1)
 
             self.last_updated = curr_time
 

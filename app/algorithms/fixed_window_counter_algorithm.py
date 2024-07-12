@@ -60,7 +60,7 @@ Two Different Approaches
     Implementation - 2:
     - Use a Hashmap(window_start_timestamp) --> Counter 
     - clean up old entries 
-        - in each request 
+        - in each request or,
         - periodically
     
     
@@ -83,7 +83,7 @@ class FixedWindowCounterAlgorithm(RateLimitingAlgorithm):
         async with self.lock:
             curr_time = time.time()
             if curr_time - self.window_start_time >= self.WINDOW_SIZE:
-                # window size exceeded
+                # window expired, reset it
                 self.counter = 0
                 self.window_start_time = curr_time
 
